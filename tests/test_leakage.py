@@ -64,3 +64,29 @@ def test_no_missing_values(feats):
 def test_dates_are_sorted_and_unique(feats):
     assert feats.dteday.is_monotonic_increasing
     assert feats.dteday.is_unique
+
+
+def test_temp_workday_interact_matches_handcomputed(feats):
+    """temp_x_workday must equal temp * is_workday for specific dates."""
+    # 2011-07-15: workday="Y", temp=23.176651 → expected = 23.176651
+    row_2011_07_15 = feats.loc[feats.dteday == "2011-07-15"]
+    assert len(row_2011_07_15) > 0, "2011-07-15 not in dataset"
+    temp_y = row_2011_07_15.loc[row_2011_07_15.workday == "Y", "temp"].values[0]
+    expected_2011_07_15 = 23.176651
+
+    # 2011-07-16: workday="N", temp=24.273349 → expected = 0.0
+    row_2011_07_16 = feats.loc[feats.dteday == "2011-07-16"]
+    assert len(row_2011_07_16) > 0, "2011-07-16 not in dataset"
+    temp_n = row_2011_07_16.loc[row_2011_07_16.workday == "N", "temp"].values[0]
+    expected_2011_07_16 = 0.0
+
+    # Check column exists first
+    assert "temp_x_workday" in feats.columns, "temp_x_workday column missing from features"
+
+    # On workday: temp_x_workday == temp (23.176651)
+    actual_2011_07_15 = feats.loc[feats.dteday == "2011-07-15", "temp_x_workday"].values[0]
+    assert pytest.approx(actual_2011_07_15) == expected_2011_07_15, f"wrong on 2011-07-15: {actual_2011_07_15}"
+
+    # On weekend: temp_x_workday == 0 (24.273349 * is_weekend)
+    actual_2011_07_16 = feats.loc[feats.dteday == "2011-07-16", "temp_x_workday"].values[0]
+    assert pytest.approx(actual_2011_07_16) == expected_2011_07_16, f"wrong on 2011-07-16: {actual_2011_07_16}"

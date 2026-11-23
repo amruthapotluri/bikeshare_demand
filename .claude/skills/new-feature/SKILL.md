@@ -6,7 +6,7 @@ allowed-tools: Read, Edit, Bash(python -m pytest*), Bash(make*)
 
 # Current feature set
 
-!`python -c "import pandas as pd; from src.features import feature_columns; print(', '.join(feature_columns(pd.read_parquet('data/processed/features.parquet'))))"`
+!`make features`
 
 # Adding a feature: $ARGUMENTS
 

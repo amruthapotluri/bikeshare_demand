@@ -9,3 +9,4 @@ Agents append here via the `/new-feature` skill; you append here by hand.
 - Split 2011 / H1 2012 / H2 2012 by date. Test set touched once, after all feature work.
 - Report mean and persistence baselines with every score. Persistence (test R^2 0.510, MAE 840) is within 0.07 R^2 of ridge and beats it on MAE; that caveat goes in the report.
 - 2026-11-23: Track reports/ (metrics.json, audit.jsonl) in git so graded outputs are committed; data/processed/ and .venv/ stay ignored.
+- 2026-11-23: Changed the new-feature skill's feature-list injection to `make features`; the starter's `python -c` command is not in the skill's allowed-tools, so the skill failed outside auto mode.
