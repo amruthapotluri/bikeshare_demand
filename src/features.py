@@ -58,6 +58,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     out["is_weekend"] = (out.dayofweek >= 5).astype(int)
     out["is_holiday"] = (out.holiday == "Y").astype(int)
     out["is_workday"] = (out.workday == "Y").astype(int)
+    out["temp_x_workday"] = out.temp * out.is_workday
 
     # Cyclical month encoding, so December and January sit next to each
     # other instead of 11 units apart.
