@@ -4,8 +4,10 @@ test_no_forbidden_features is the single most valuable test in this repo:
 casual + registered == cnt exactly, so any model handed those columns
 scores R^2 = 1.0 and looks brilliant while having learned nothing.
 """
+import numpy as np
 import pandas as pd
 import pytest
+from itertools import combinations
 
 from src.config import FORBIDDEN, TARGET
 from src.features import build_features, feature_columns
@@ -15,6 +17,26 @@ from src.ingest import load_raw
 @pytest.fixture(scope="module")
 def feats():
     return build_features(load_raw())
+
+
+def test_no_feature_restates_target(feats):
+    """No feature column (single or pair) can reconstruct the target within 1.0."""
+    fcols = list(feature_columns(feats))
+    y = feats[TARGET].to_numpy().reshape(-1, 1)
+
+    for col in fcols:
+        A = np.column_stack([np.ones(len(feats)), feats[col]])
+        coeffs, residuals, rank, s = np.linalg.lstsq(A, y, rcond=None)
+        resids = y - A @ coeffs
+        max_abs_resid = np.max(np.abs(resids))
+        assert max_abs_resid > 1.0, f"Feature '{col}' restates target (max residual {max_abs_resid:.2f})"
+
+    for col_a, col_b in combinations(fcols, 2):
+        A = np.column_stack([np.ones(len(feats)), feats[col_a], feats[col_b]])
+        coeffs, residuals, rank, s = np.linalg.lstsq(A, y, rcond=None)
+        resids = y - A @ coeffs
+        max_abs_resid = np.max(np.abs(resids))
+        assert max_abs_resid > 1.0, f"Feature pair '{col_a} x {col_b}' restates target (max residual {max_abs_resid:.2f})"
 
 
 def test_leakage_identity_holds(feats):
