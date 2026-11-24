@@ -56,3 +56,30 @@ Hook stderr: fired in Claude Code right after the agent's edit. The agent's reve
 
 Red test: test_rolling_mean_excludes_today.
 Turns to fix: 1. The agent identified the temporal leak from the hook message unprompted and offered three options, one of which was to "fix the test to match the new behavior", which would have weakened the check. I chose revert. After fix: 18 passed.
+## Fault 3: weather encoder's raise removed
+
+Seeded with my /seed-fault skill.
+
+3a. Change: in encode_weather, `raise ValueError(...)` replaced with `pass`.
+Result: python -m pytest tests/ -q -> 18 passed. Hook (same payload, run by hand) -> exit=0.
+Finding: removing the guard alone changes no output, because every label in this mirror (GOOD/MISTY/BAD) is already in WEATHER_ORDER. No test can fail; the guard only matters once a label is unmapped.
+
+3b. To recreate the Step 5 bug, also changed "BAD": 2 to "STORM": 2 in WEATHER_ORDER, so the 20 BAD days map to NaN and are dropped by dropna() with no error:
+
+    FAILED tests/test_contract.py::test_only_expected_rows_are_dropped - Assertio...
+    1 failed, 17 passed in 2.36s
+    hook: exit=0
+
+Finding: the suite catches it, but the PostToolUse hook stayed silent (exit 0), because check_leakage.sh ran only tests/test_leakage.py and the row-loss test lives in tests/test_contract.py. The agent would not have been told.
+Turns to fix: 1 ("restore"). After fix: 18 passed.
+
+Fix: changed check_leakage.sh to run python -m pytest tests/ -q. Re-seeded 3b by hand and ran the fixed hook:
+
+    E       AssertionError: lost 34 rows; expected at most 14
+    E       assert 34 <= 14
+    
+    tests/test_contract.py:48: AssertionError
+    =========================== short test summary info ============================
+    FAILED tests/test_contract.py::test_only_expected_rows_are_dropped - Assertio...
+    1 failed, 17 passed in 1.92s
+    exit=2
